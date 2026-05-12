@@ -8,6 +8,7 @@ from tools.sanitiser import sanitise_findings
 from dotenv import load_dotenv
 import os
 import json
+import time
 
 load_dotenv()
 
@@ -15,17 +16,6 @@ MAX_RETRIES = 3
 
 
 def run_pipeline(repo_url: str, log_callback=None) -> dict:
-    """
-    Run the full CodeSentinel pipeline on a GitHub repository.
-
-    Args:
-        repo_url: Full GitHub URL e.g. https://github.com/owner/repo
-        log_callback: Optional function(str) called with each log message
-
-    Returns:
-        dict with pr_url, approved, changes
-    """
-
     def log(msg: str):
         print(msg)
         if log_callback:
@@ -58,11 +48,13 @@ def run_pipeline(repo_url: str, log_callback=None) -> dict:
         findings_raw = str(research_crew.kickoff())
         findings_safe = sanitise_findings(findings_raw)
         log(f"[STEP 2/5] Research complete. Preview: {findings_safe[:200]}...")
+        log("[STEP 2/5] Waiting 60s to avoid rate limit...")
+        time.sleep(60)
 
         # ── STEP 3: Coder + QA debate loop ──
         approved = False
         changes_summary = ""
-        sandbox_result = {"passed": False, "stdout": "", "stderr": ""}
+        sandbox_result = {"passed": False, "stdout": "", "stderr": "", "coverage_before": 0.0, "coverage_after": 0.0, "coverage_delta": 0.0}
         rejection_feedback = ""
 
         for attempt in range(1, MAX_RETRIES + 1):
@@ -76,6 +68,8 @@ def run_pipeline(repo_url: str, log_callback=None) -> dict:
             )
             changes_summary = str(coder_crew.kickoff())
             log(f"[STEP 3/5] Coder finished. Changes: {changes_summary[:150]}...")
+            log("[STEP 3/5] Waiting 60s to avoid rate limit...")
+            time.sleep(60)
 
             # Run sandbox
             log(f"[STEP 4/5] QA Tester — running tests in Docker sandbox (attempt {attempt}/{MAX_RETRIES})...")
@@ -94,10 +88,14 @@ def run_pipeline(repo_url: str, log_callback=None) -> dict:
             if sandbox_result["passed"] or "APPROVED" in qa_result.upper():
                 log(f"[STEP 4/5] QA APPROVED — all tests passed on attempt {attempt}")
                 approved = True
+                log("[STEP 4/5] Waiting 60s to avoid rate limit...")
+                time.sleep(60)
                 break
             else:
                 log(f"[STEP 4/5] QA REJECTED — attempt {attempt}. Sending feedback to Coder...")
                 rejection_feedback = f"QA Rejection (attempt {attempt}):\n{qa_result}\n\nSandbox output:\n{sandbox_result['stdout'][:500]}"
+                log("[STEP 4/5] Waiting 60s to avoid rate limit...")
+                time.sleep(60)
 
         if not approved:
             log("[STEP 4/5] Max retries reached — submitting best attempt")
@@ -115,7 +113,7 @@ def run_pipeline(repo_url: str, log_callback=None) -> dict:
             sandbox_result=sandbox_result,
             coverage_before=sandbox_result.get("coverage_before", 0.0),
             coverage_after=sandbox_result.get("coverage_after", 0.0),
-)
+        )
 
         log(f"[PIPELINE] Done! Pull Request created: {pr_url}")
 
@@ -132,7 +130,6 @@ def run_pipeline(repo_url: str, log_callback=None) -> dict:
 
 
 if __name__ == "__main__":
-    # Quick test — run from terminal: python -m pipeline.crew
     import sys
     repo = sys.argv[1] if len(sys.argv) > 1 else os.getenv("TARGET_REPO", "")
     if not repo:
