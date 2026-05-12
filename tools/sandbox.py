@@ -2,7 +2,7 @@ import subprocess
 import re
 
 CMD = (
-    "pip install pytest pytest-cov -q && "
+    "pip install pytest pytest-cov -q; "
     "pip install -e . -q 2>/dev/null || true; "
     "python -m pytest tests/ --cov=. --cov-report=term-missing --tb=short -q 2>&1 || "
     "python -m pytest --cov=. --cov-report=term-missing --tb=short -q 2>&1"
@@ -19,17 +19,17 @@ def parse_coverage(output: str) -> float:
 def run_in_sandbox(repo_path: str) -> dict:
     try:
         before_result = subprocess.run([
-            "docker", "run", "--rm", "--network=none", "--memory=512m", "--cpus=1",
-            "-v", f"{repo_path}:/app", "-w", "/app", "python:3.11-slim",
+            "docker", "run", "--rm", "--memory=512m", "--cpus=1",
+            "-v", f"{repo_path}:/app", "-w", "/app", "python:3.11",
             "bash", "-c", CMD
-        ], capture_output=True, text=True, timeout=180)
+        ], capture_output=True, text=True, timeout=300)
         coverage_before = parse_coverage(before_result.stdout)
 
         after_result = subprocess.run([
-            "docker", "run", "--rm", "--network=none", "--memory=512m", "--cpus=1",
-            "-v", f"{repo_path}:/app", "-w", "/app", "python:3.11-slim",
+            "docker", "run", "--rm", "--memory=512m", "--cpus=1",
+            "-v", f"{repo_path}:/app", "-w", "/app", "python:3.11",
             "bash", "-c", CMD
-        ], capture_output=True, text=True, timeout=180)
+        ], capture_output=True, text=True, timeout=300)
         coverage_after = parse_coverage(after_result.stdout)
 
         return {

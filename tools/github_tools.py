@@ -9,10 +9,7 @@ load_dotenv()
 
 
 def clone_repo(repo_url: str) -> tuple[str, str]:
-    """
-    Clone a GitHub repo to a temp directory.
-    Returns (local_path, repo_name)
-    """
+    """Clone a GitHub repo to a temp directory. Returns (local_path, repo_name)"""
     token = os.getenv("GITHUB_TOKEN")
     repo_name = repo_url.replace("https://github.com/", "").rstrip("/")
     auth_url = repo_url.replace("https://", f"https://{token}@")
@@ -53,7 +50,7 @@ def push_changes(repo_path: str, branch_name: str, commit_message: str) -> bool:
     try:
         subprocess.run(["git", "config", "user.email", "codesentinel@hackathon.dev"], cwd=repo_path)
         subprocess.run(["git", "config", "user.name", "CodeSentinel"], cwd=repo_path)
-        subprocess.run(["git", "checkout", "-b", branch_name], cwd=repo_path, capture_output=True)
+        subprocess.run(["git", "checkout", "-B", branch_name], cwd=repo_path, capture_output=True)
         subprocess.run(["git", "add", "-A"], cwd=repo_path)
 
         result = subprocess.run(
@@ -63,7 +60,7 @@ def push_changes(repo_path: str, branch_name: str, commit_message: str) -> bool:
         if "nothing to commit" in result.stdout:
             return False
 
-        subprocess.run(["git", "push", "origin", branch_name], cwd=repo_path, capture_output=True)
+        subprocess.run(["git", "push", "-f", "origin", branch_name], cwd=repo_path, capture_output=True)
         return True
     except Exception as e:
         print(f"Push failed: {e}")
@@ -86,7 +83,6 @@ def create_pull_request(
 
     status_emoji = "✅" if sandbox_result.get("passed") else "⚠️"
 
-    # Parse the coder's JSON output
     security_fixes_md = ""
     refactors_md = ""
     files_modified_md = ""
@@ -109,7 +105,6 @@ def create_pull_request(
         refactors_md = "_See summary below_"
         files_modified_md = "_Could not parse file list_"
 
-    # Parse findings for CVE sources
     findings_md = ""
     try:
         fdata = json.loads(findings) if isinstance(findings, str) else findings
@@ -119,58 +114,38 @@ def create_pull_request(
         findings_md = "| — | — | — | — | Could not parse findings |\n"
 
     sandbox_stdout = sandbox_result.get("stdout", "No output")[:600]
+    passed_str = "PASSED" if sandbox_result.get("passed") else "PARTIAL"
+    delta = max(0, coverage_after - coverage_before)
 
-    body = f"""## 🤖 CodeSentinel — Autonomous Security Enhancement
-
-> Generated autonomously by **CodeSentinel**, a multi-agent AI pipeline built for the **GDG EUI × Duckurity AISprint Hackathon 2026** — Challenge 4: Agentic Code Enhancer.
-
----
-
-## 🔒 Security Fixes
-{security_fixes_md or "_No security fixes parsed_"}
-
-## ♻️ Refactoring
-{refactors_md or "_No refactors parsed_"}
-
-## 📁 Files Modified
-{files_modified_md or "_No files parsed_"}
-
----
-
-## 📊 Findings (Top 5 by Priority Score)
-
-| ID | Type | Score | Source | Issue |
-|----|------|-------|--------|-------|
-{findings_md}
-
----
-
-## 🧪 Test Results
-{status_emoji} **Status: {"PASSED" if sandbox_result.get("passed") else "PARTIAL"}**
-
-```
-{sandbox_stdout}
-```
-
-## 📈 Coverage Delta
-| | Coverage |
-|---|---|
-| Before | {coverage_before:.1f}% |
-| After | {coverage_after:.1f}% |
-| Delta | +{max(0, coverage_after - coverage_before):.1f}% |
-
----
-
-## 🤖 Agent Pipeline
-| Step | Agent | Action |
-|------|-------|--------|
-| 1 | 🔍 Researcher | Scraped CVEs, arXiv papers, ran Bandit static analysis, scored findings |
-| 2 | 💻 Coder | Applied fixes in priority order, added type hints and docstrings |
-| 3 | ✅ QA Tester | Generated pytest suite, validated in Docker sandbox, approved changes |
-
----
-*🦆 CodeSentinel — GDG EUI × Duckurity AISprint Hackathon 2026*
-"""
+    body = (
+        "## 🤖 CodeSentinel — Autonomous Security Enhancement\n\n"
+        "> Generated autonomously by **CodeSentinel**, a multi-agent AI pipeline built for the "
+        "**GDG EUI × Duckurity AISprint Hackathon 2026** — Challenge 4: Agentic Code Enhancer.\n\n"
+        "---\n\n"
+        f"## 🔒 Security Fixes\n{security_fixes_md or '_No security fixes parsed_'}\n\n"
+        f"## ♻️ Refactoring\n{refactors_md or '_No refactors parsed_'}\n\n"
+        f"## 📁 Files Modified\n{files_modified_md or '_No files parsed_'}\n\n"
+        "---\n\n"
+        "## 📊 Findings (Top 5 by Priority Score)\n\n"
+        "| ID | Type | Score | Source | Issue |\n"
+        "|----|------|-------|--------|-------|\n"
+        f"{findings_md}\n"
+        "---\n\n"
+        f"## 🧪 Test Results\n{status_emoji} **Status: {passed_str}**\n\n"
+        f"```\n{sandbox_stdout}\n```\n\n"
+        "## 📈 Coverage Delta\n"
+        "| | Coverage |\n|---|---|\n"
+        f"| Before | {coverage_before:.1f}% |\n"
+        f"| After | {coverage_after:.1f}% |\n"
+        f"| Delta | +{delta:.1f}% |\n\n"
+        "---\n\n"
+        "## 🤖 Agent Pipeline\n"
+        "| Step | Agent | Action |\n|------|-------|--------|\n"
+        "| 1 | 🔍 Researcher | Scraped CVEs, arXiv papers, ran Bandit static analysis, scored findings |\n"
+        "| 2 | 💻 Coder | Applied fixes in priority order, added type hints and docstrings |\n"
+        "| 3 | ✅ QA Tester | Generated pytest suite, validated in Docker sandbox, approved changes |\n\n"
+        "---\n*🦆 CodeSentinel — GDG EUI × Duckurity AISprint Hackathon 2026*\n"
+    )
 
     pr = repo.create_pull(
         title="[CodeSentinel] 🤖 Automated security patches and code modernisation",
