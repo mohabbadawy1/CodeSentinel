@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from crewai.tools import tool
+from langchain.tools import tool
 
 
 @tool("CVE Scraper")

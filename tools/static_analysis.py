@@ -2,7 +2,7 @@ import ast
 import subprocess
 import json
 import os
-from crewai.tools import tool
+from langchain.tools import tool
 
 
 @tool("Static Analyser")

@@ -1,4 +1,5 @@
-from crewai import Agent, Task, LLM
+from crewai import Agent, Task
+from langchain_openai import ChatOpenAI
 from tools.scraper import scrape_cves, scrape_arxiv
 from tools.static_analysis import run_static_analysis
 from dotenv import load_dotenv
@@ -6,8 +7,8 @@ import os
 
 load_dotenv()
 
-llm = LLM(
-    model="groq/llama-3.3-70b-versatile",
+llm = ChatOpenAI(
+    model="llama-3.3-70b-versatile", openai_api_base="https://api.groq.com/openai/v1", openai_api_key=os.getenv("GROQ_API_KEY"),
     api_key=os.getenv("GROQ_API_KEY")
 )
 
