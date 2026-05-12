@@ -113,7 +113,9 @@ def run_pipeline(repo_url: str, log_callback=None) -> dict:
             changes_summary=changes_summary,
             findings=findings_safe,
             sandbox_result=sandbox_result,
-        )
+            coverage_before=sandbox_result.get("coverage_before", 0.0),
+            coverage_after=sandbox_result.get("coverage_after", 0.0),
+)
 
         log(f"[PIPELINE] Done! Pull Request created: {pr_url}")
 
