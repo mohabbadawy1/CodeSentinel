@@ -1,16 +1,9 @@
 from crewai import Agent, Task
-from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
-llm = ChatOpenAI(
-    model="llama-3.3-70b-versatile",
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=os.getenv("GROQ_API_KEY"),
-    api_key=os.getenv("GROQ_API_KEY")
-)
 
 coder = Agent(
     role="Senior Software Engineer",
@@ -20,8 +13,8 @@ coder = Agent(
         "You write clean, well-documented Python code with type hints. "
         "You address issues in order of priority score and always explain your changes clearly."
     ),
-    llm=llm,
-    verbose=True,
+    llm="groq/llama-3.1-8b-instant",
+    verbose=False,
     allow_delegation=False
 )
 

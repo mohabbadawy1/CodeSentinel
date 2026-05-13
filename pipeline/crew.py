@@ -1,3 +1,4 @@
+import compatibility_patch
 from crewai import Crew, Process
 from agents.researcher import researcher, build_research_task
 from agents.coder import coder, build_coder_task

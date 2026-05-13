@@ -1,30 +1,23 @@
 from crewai import Agent, Task
-from langchain_openai import ChatOpenAI
-from tools.scraper import scrape_cves, scrape_arxiv
-from tools.static_analysis import run_static_analysis
+from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
-llm = ChatOpenAI(
-    model="llama-3.3-70b-versatile",
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=os.getenv("GROQ_API_KEY"),
+llm = ChatGroq(
+    model="groq/llama-3.1-8b-instant",
+    temperature=0,
     api_key=os.getenv("GROQ_API_KEY")
 )
 
 researcher = Agent(
     role="Security Researcher",
-    goal="Identify all vulnerabilities, deprecated patterns, and security issues in a GitHub repository",
-    backstory=(
-        "You are an expert in CVE databases, security research, and static code analysis. "
-        "You methodically analyse codebases, cross-reference known vulnerabilities, and "
-        "produce clear, actionable findings reports ordered by priority."
-    ),
-    tools=[scrape_cves, scrape_arxiv, run_static_analysis],
-    llm=llm,
-    verbose=True,
+    goal="Identify vulnerabilities",
+    backstory="Expert security researcher",
+    tools=[],
+    llm="groq/llama-3.1-8b-instant",
+    verbose=False,
     allow_delegation=False
 )
 

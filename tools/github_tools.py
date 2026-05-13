@@ -11,7 +11,7 @@ load_dotenv()
 def clone_repo(repo_url: str) -> tuple[str, str]:
     """Clone a GitHub repo to a temp directory. Returns (local_path, repo_name)"""
     token = os.getenv("GITHUB_TOKEN")
-    repo_name = repo_url.replace("https://github.com/", "").rstrip("/")
+    repo_name = repo_url.replace("https://github.com/", "").replace(".git", "").rstrip("/")
     auth_url = repo_url.replace("https://", f"https://{token}@")
 
     tmp_dir = tempfile.mkdtemp(prefix="codesentinel_")
@@ -35,7 +35,11 @@ def create_branch(repo_name: str, branch_name: str) -> bool:
     """Create a new branch on GitHub. Returns True if created."""
     try:
         g = Github(os.getenv("GITHUB_TOKEN"))
+
+        repo_name = repo_name.replace("https://github.com/", "").replace(".git", "")
+
         repo = g.get_repo(repo_name)
+
         default = repo.default_branch
         base_sha = repo.get_branch(default).commit.sha
         repo.create_git_ref(f"refs/heads/{branch_name}", base_sha)
@@ -43,7 +47,6 @@ def create_branch(repo_name: str, branch_name: str) -> bool:
     except Exception as e:
         print(f"Branch creation note: {e}")
         return False
-
 
 def push_changes(repo_path: str, branch_name: str, commit_message: str) -> bool:
     """Stage all changes, commit, and push to the remote branch."""
@@ -78,7 +81,11 @@ def create_pull_request(
 ) -> str:
     """Create a Pull Request and return its URL."""
     g = Github(os.getenv("GITHUB_TOKEN"))
+
+    repo_name = repo_name.replace("https://github.com/", "").replace(".git", "")
+
     repo = g.get_repo(repo_name)
+
     default = repo.default_branch
 
     status_emoji = "✅" if sandbox_result.get("passed") else "⚠️"

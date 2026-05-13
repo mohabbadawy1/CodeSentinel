@@ -1,16 +1,8 @@
 from crewai import Agent, Task
-from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
-
-llm = ChatOpenAI(
-    model="llama-3.3-70b-versatile",
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=os.getenv("GROQ_API_KEY"),
-    api_key=os.getenv("GROQ_API_KEY")
-)
 
 qa_tester = Agent(
     role="QA Engineer",
@@ -20,8 +12,8 @@ qa_tester = Agent(
         "You write comprehensive pytest test suites and run them in isolated environments. "
         "If anything fails, you produce a clear rejection report so the Coder can fix it."
     ),
-    llm=llm,
-    verbose=True,
+    llm="groq/llama-3.1-8b-instant",
+    verbose=False,
     allow_delegation=False
 )
 
