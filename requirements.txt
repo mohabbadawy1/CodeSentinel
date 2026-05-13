@@ -1,0 +1,6 @@
+crewai==0.11.2
+groq==1.2.0
+PyGithub==2.3.0
+beautifulsoup4==4.12.3
+requests==2.31.0
+python-dotenv==1.0.1
